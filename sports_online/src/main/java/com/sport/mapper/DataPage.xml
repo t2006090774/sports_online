@@ -1,0 +1,81 @@
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.sport.dao.dataPage.IDataPageDao">
+
+	<resultMap type="com.sport.entity.dataPage.DataHomePage" id="dataPageMap">
+		<id column="pid" property="pid"/>
+		<result column="pictureUrl" property="pictureUrl"/>
+		<result column="title" property="title"/>
+		<result column="categoryId" property="categoryId"/>
+		<result column="createDate" property="createDate"/>
+		<result column="newsTime" property="newsTime"/>
+		<association property="dataSecondaryPage" column="pid" javaType="com.sport.entity.dataPage.DataSecondaryPage">
+            <id property="id" column="id" />
+            <result property="titleSecond" column="titleSecond" />
+            <result property="promulgatorSecond" column="promulgatorSecond" />
+            <result property="qrCodeUrl" column="qrCodeUrl" />
+            <result property="qrCodeUrl1" column="qrCodeUrl1" />
+            <result property="createDateSecond" column="createDateSecond" />
+            <result property="newsTimeSecond" column="newsTimeSecond" />
+            <collection property="pictureUrlSecond" column="pid" javaType="ArrayList" 
+                ofType="java.lang.String" select="getPictureUrlByPid"/>
+            <collection property="contentSecond" column="pid" javaType="ArrayList" 
+            	ofType="java.lang.String" select="getContentByPid"/>
+       </association>
+	</resultMap>
+	
+	<!--查询PictureUrlList  -->
+	<select id="getPictureUrlByPid" parameterType="java.lang.Integer" resultType="java.lang.String">
+	    select pictureUrl from data_secondary_page_picture where pid = #{pid}
+	</select>
+	
+	<!--查询contentList  -->
+	<select id="getContentByPid" parameterType="java.lang.Integer" resultType="java.lang.String">
+	    select content from data_secondary_page_content where pid = #{pid}
+	</select>
+	
+	<!--查询HomePage  -->
+	<select id="getPageData" parameterType="com.sport.entity.base.Paging" resultMap="dataPageMap">
+	    select a.*,b.* from data_home_page a left join data_secondary_page b on a.pid = b.pid where categoryId = #{categoryId} and a.title not like '%组图%' order by createDate DESC limit #{firstIndex},#{pageSize}
+	</select>
+	
+	<!--查询Category  -->
+	<select id="getCategoryData" resultType="com.sport.entity.Category">
+	    select a.categoryId,a.categoryName,a.description,b.logoUrl 
+	    from data_category a 
+	    left join data_classify_team_logo b 
+	    on a.categoryName = b.classifyName
+	    where a.categoryType = #{categoryType} and a.delFlag = 1 
+	    GROUP BY a.categoryName
+	</select>
+	
+	<!-- 根据id查询Category  -->
+	<select id="getAllCategoryForId" parameterType="java.lang.Integer" resultType="com.sport.entity.Category">
+	    select * from data_category where categoryId = #{categoryId} and delFlag = 1 GROUP BY categoryName
+	</select>
+
+	<!-- 二级页面映射 -->
+	<resultMap type="com.sport.entity.dataPage.DataSecondaryPage" id="dataSecondPageMap">
+		<id property="id" column="id" />
+		<result property="titleSecond" column="titleSecond" />
+		<result property="promulgatorSecond" column="promulgatorSecond" />
+		<result property="qrCodeUrl" column="qrCodeUrl" />
+		<result property="qrCodeUrl1" column="qrCodeUrl1" />
+		<result property="createDateSecond" column="createDateSecond" />
+		<result property="newsTimeSecond" column="newsTimeSecond" />
+		<collection property="pictureUrlSecond" column="pid" javaType="ArrayList"
+					ofType="java.lang.String" select="getPictureUrlByPid"/>
+		<collection property="contentSecond" column="pid" javaType="ArrayList"
+					ofType="java.lang.String" select="getContentByPid"/>
+	</resultMap>
+
+	<!-- 根据pid查询二级页面数据 -->
+	<select id="getSecondPageData" parameterType="java.lang.Integer" resultMap="dataSecondPageMap">
+	    select * from data_secondary_page where pid = #{pid}
+	</select>
+
+	
+
+</mapper>

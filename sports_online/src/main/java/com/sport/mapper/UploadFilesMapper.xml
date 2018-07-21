@@ -1,0 +1,18 @@
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.sport.dao.appService.IUploadFilesDao">
+
+	<!-- 查询名字是否存在 -->
+	<insert id="saveApk" parameterType="com.sport.entity.app.Files">
+		insert into app_apk_url(appName,appApkUrl,createDate,delFlag)value
+							   (#{fileName},#{fileUrl},NOW(),1)
+	</insert>
+
+	<!-- 查询名字是否存在 -->
+	<select id="getApk" parameterType="java.lang.String" resultType="com.sport.entity.app.Files">
+		select appName as 'fileName',appApkUrl as 'fileUrl' from app_apk_url where appName = #{fileName}
+	</select>
+
+</mapper>

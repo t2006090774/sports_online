@@ -1,0 +1,74 @@
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.sport.dao.appService.IDataInterfaceDao">
+
+	<!-- 查询名字是否存在 -->
+	<select id="checkSwitchName" parameterType="com.sport.entity.UpdateUrlContent" resultType="java.lang.Integer">
+		select count(*) from data_app where appId = #{switchName}
+	</select>
+
+	<!-- 添加开关 -->
+	<insert id="addSwitchName" parameterType="com.sport.entity.UpdateUrlContent">
+		insert into data_app(appId,appData,delFlag,CreateDate,modifyDate) value(#{switchName},#{switchContent},1,now(),now())
+	</insert>
+
+	<!-- 获取url的app数据 -->
+	<select id="getDataOne" parameterType="java.lang.String" resultType="java.lang.String">
+		select appData from data_app where appId = #{userFlag}
+	</select>
+	
+	<!-- 修改url数据 -->
+	<update id="setContentOne" parameterType="com.sport.entity.UpdateUrlContent">
+		update data_app
+		<trim prefix="set" suffixOverrides=",">
+			<if test="newUserFlag!=null and newUserFlag!=''">
+				appId = #{newUserFlag},
+			</if>
+			modifyDate = now(),
+			appData = #{appData}
+
+		</trim>
+		where appId = #{userFlag}
+	</update>
+
+	<!-- 查询快递 -->
+	<select id="getExpress" parameterType="java.lang.String" resultType="com.sport.entity.base.Express">
+		select * from app_express_message where tableId IN ( SELECT MAX(tableId )
+		FROM app_express_message
+		WHERE username = #{username} GROUP BY expressNum)
+	</select>
+
+	<!-- 保存快递 -->
+	<insert id="addExpress" parameterType="com.sport.entity.base.Express">
+		insert into app_express_message (expressKey,expressName,expressNum,username,createDate)
+		value(
+			#{expressKey},#{expressName},#{expressNum},#{username},#{createDate}
+		)
+	</insert>
+
+
+	<!-- 查询txt列表 -->
+	<select id="getTxtList" parameterType="com.sport.entity.base.Paging" resultType="com.sport.entity.Txt">
+		select * from app_txt_data
+		ORDER BY id desc
+		limit #{firstIndex},#{pageSize}
+	</select>
+
+	<!-- 查询txt -->
+	<select id="getTxt" parameterType="java.lang.String" resultType="com.sport.entity.Txt">
+		select * from app_txt_data where
+		txtName = #{txtName}
+	</select>
+
+	<!-- 保存txt -->
+	<insert id="addTxt" parameterType="com.sport.entity.Txt">
+		insert into app_txt_data (txtName,txtContentName,txtPicUrl,txtClass,txtUrl)
+		value(
+			#{txtName},#{txtContentName},#{txtPicUrl},#{txtClass},#{txtUrl}
+		)
+	</insert>
+	
+
+</mapper>

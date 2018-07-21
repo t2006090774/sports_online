@@ -1,0 +1,231 @@
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.sport.dao.forum.IForumDao">
+
+	<!-- 查询文章详情  column="writer"-->
+	<resultMap type="com.sport.entity.forum.Article" id="articleMap">
+		<id column="tableId" property="tableId"/>
+		<result column="articleTitle" property="articleTitle"/>
+		<result column="createDate" property="createDate"/>
+		<result column="isLike" property="isLike"/>
+		<association property="likeNum" column="tableId" javaType="java.lang.Integer" select="getLikeNumAtArticle"/>
+		<association property="writer" javaType="com.sport.entity.UserDetailedInformation">
+            <id property="username" column="username" />
+            <result property="nickname" column="nickname" />
+            <result property="userImageUrl" column="userImageUrl" />
+       	</association>
+		<collection property="articleContent" column="tableId" javaType="ArrayList"
+                ofType="java.lang.String"  select="getArticleContentList"/>
+
+        <collection property="commentList" column="{tableId=tableId,username=isLikeUsername}" ofType="com.sport.entity.forum.Comment" select="getArticleCommentList">
+			<id property="tableId" column="tableId"  javaType="java.lang.Integer"/>
+			<result property="articlePid" column="articlePid" javaType="java.lang.Integer"/>
+            <result property="createDate" column="createDate" javaType="java.lang.String" />
+            <result property="commentContent" column="commentContent" javaType="java.lang.String" />
+			<result property="likeNum" column="likeNum" javaType="java.lang.Integer"/>
+			<result property="commentWritebackListNum" column="commentWritebackListNum" javaType="java.lang.Integer"/>
+			<association property="commentator" javaType="com.sport.entity.UserDetailedInformation">
+	            <id property="username" column="username" />
+	            <result property="nickname" column="nickname" />
+	            <result property="userImageUrl" column="userImageUrl" />
+	       	</association>
+        </collection>
+	</resultMap>
+
+	<!-- 查询文章列表 column="writer"  select="getUserByUsername"-->
+	<resultMap type="com.sport.entity.forum.Article" id="articleListMap">
+		<id column="tableId" property="tableId"/>
+		<result column="articleTitle" property="articleTitle"/>
+		<result column="createDate" property="createDate"/>
+		<association property="likeNum" column="tableId" javaType="java.lang.Integer" select="getLikeNumAtArticle"/>
+		<association property="writer" column="username" javaType="com.sport.entity.UserDetailedInformation">
+			<id property="username" column="username" />
+			<result property="nickname" column="nickname" />
+			<result property="userImageUrl" column="userImageUrl" />
+		</association>
+		<association property="commentNum" column="tableId" javaType="java.lang.Integer" select="getCommentNum"/>
+		<collection property="articleContent" column="tableId" javaType="ArrayList"
+					ofType="java.lang.String"  select="getArticleContentList"/>
+	</resultMap>
+
+	<!-- 保存ArticleData -->
+	<insert id="saveArticleData" useGeneratedKeys="true" keyProperty="tableId" parameterType="com.sport.entity.forum.Article">
+		insert into data_article (articleTitle,writer,likeNum,createDate,delFlag,systemFlag)
+		values (#{articleTitle},#{writer.username},0,#{createDate},1,#{systemFlag})
+	</insert>
+
+	<!-- 保存ArticleContent -->
+	<insert id="saveArticleContent" parameterType="java.util.Map">
+		insert into data_article_content (pid,content)
+		values
+		<foreach collection="articleContent" item="item" index="index" separator=",">
+	      	(#{tableId}, #{item})
+        </foreach>
+	</insert>
+
+	<!-- 查询Article -->
+	<select id="getArticleData" parameterType="java.util.Map" resultMap="articleMap">
+	    select
+	    	a.tableId,a.articleTitle,a.createDate,b.username,b.nickname,b.userImageUrl,
+	    	(select count(*) from common_like_record where islike='1' and username = #{isLikeUsername} and pid = a.tableId and likePage = '1' and delFlag = 1) 'isLike',
+	    	#{isLikeUsername} AS 'isLikeUsername'
+	    from data_article a
+	    left join user_detailed_information b on a.writer = b.username
+	    where a.delFlag = 1 and a.tableId = #{tableId}
+	    <if test="systemFlag!=null and systemFlag!=''">
+			and systemFlag = #{systemFlag}
+		</if>
+	</select>
+
+	<!-- 查询Article列表 -->
+	<select id="getArticleListData" parameterType="com.sport.entity.base.Paging" resultMap="articleListMap">
+	    select a.tableId,a.articleTitle,a.createDate,b.username,b.nickname,b.userImageUrl from data_article a
+	    left join user_detailed_information b on a.writer = b.username
+	    where a.delFlag = 1
+		<if test="systemFlag!=null and systemFlag!=''">
+			and systemFlag = #{systemFlag}
+		</if>
+	    order by a.createDate DESC limit #{firstIndex},#{pageSize}
+	</select>
+
+	<!-- 查询articleContent  -->
+	<select id="getArticleContentList" parameterType="java.lang.Integer" resultType="java.lang.String">
+	    select content from data_article_content where pid = #{tableId}
+	</select>
+
+	<!-- 查询articleCommentList  -->
+	<select id="getArticleCommentList" parameterType="java.util.HashMap" resultType="com.sport.entity.forum.Comment">
+		select a.tableId,a.commentator,a.createDate,a.commentContent,
+			b.username 'commentator.username',
+			b.nickname 'commentator.nickname',
+			b.userImageUrl 'commentator.userImageUrl',
+			(select count(*) from common_like_record where pid = a.tableId and likePage = 2 and isLike = '1' and delFlag = 1) 'likeNum',
+			(select count(*) from common_like_record where islike='1' and username = #{username} and pid = a.tableId and likePage = '2' and delFlag = 1) 'isLike',
+			(SELECT count(*) FROM common_comment_writeback WHERE FIND_IN_SET(pid,(SELECT queryChildrenAreaInfo(a.tableId))) AND delFlag = '1') 'commentWritebackListNum'
+		from common_comment a
+		left join user_detailed_information b on a.commentator = b.username
+		where a.articlePid = #{tableId}
+	</select>
+
+	<!-- 查询CommentNum  -->
+	<select id="getCommentNum" parameterType="java.lang.String" resultType="java.lang.Integer">
+	    select count(*) from common_comment where articlePid = #{tableId} and delFlag = 1
+	</select>
+
+	<!-- 查询文章点赞数  -->
+	<select id="getLikeNumAtArticle" parameterType="java.lang.String" resultType="java.lang.Integer">
+	    select count(*) from common_like_record where pid = #{tableId} and likePage = 1 and isLike = '1' and delFlag = 1
+	</select>
+
+	<!-- 查询评论回复点赞数  -->
+	<select id="getLikeNumAtCommentWriteBack" parameterType="java.lang.String" resultType="java.lang.Integer">
+	    select count(*) 'likeNum' from common_like_record where pid = #{tableId} and likePage = 3 and isLike = '1' and delFlag = 1
+	</select>
+
+	<!-- 保存评论信息 -->
+	<insert id="saveComment" parameterType="com.sport.entity.forum.Comment">
+		insert into common_comment (articlePid,commentator,createDate,commentContent,delFlag,likeNum)
+		values (#{tableId},#{commentator.username},#{createDate},#{commentContent},1,0)
+	</insert>
+
+	<!-- 保存评论回复信息 -->
+	<insert id="saveCommentWriteback" parameterType="com.sport.entity.forum.CommentWriteback">
+		insert into common_comment_writeback (pid,replier,byReplier,createDate,replyContent,commentLevel,delFlag)
+		values (#{pid},#{replier.username},#{byReplier.username},#{createDate},#{replyContent},#{commentLevel},1)
+	</insert>
+
+	<!-- 回复详细信息 -->
+	<resultMap type="com.sport.entity.forum.CommentWriteback" id="commentWritebackMap">
+		<id column="tableId" property="tableId"/>
+		<result column="pid" property="pid"/>
+		<result column="isLike" property="isLike"/>
+		<result column="likeNum" property="likeNum"/>
+		<result column="commentLevel" property="commentLevel"/>
+		<result column="replyContent" property="replyContent"/>
+		<result column="createDate" property="createDate"/>
+		<association property="replier" javaType="com.sport.entity.UserDetailedInformation">
+            <id property="username" column="username1" />
+            <result property="nickname" column="nickname1" />
+            <result property="userImageUrl" column="userImageUrl1" />
+       	</association>
+		<association property="byReplier" javaType="com.sport.entity.UserDetailedInformation">
+            <id property="username" column="username2" />
+            <result property="nickname" column="nickname2" />
+            <result property="userImageUrl" column="userImageUrl2" />
+       	</association>
+	</resultMap>
+
+	<!-- 查询详细回复信息 -->
+	<select id="getCommentWriteback" parameterType="com.sport.entity.base.Paging" resultMap="commentWritebackMap">
+	    select a.tableId,a.createDate,a.replyContent,a.commentLevel,a.replier,a.byReplier,
+	    	b.username 'username1',b.nickname 'nickname1',b.userImageUrl 'userImageUrl1',
+			c.username 'username2',c.nickname 'nickname2',c.userImageUrl 'userImageUrl2',
+			(select count(*) from common_like_record where pid = a.tableId and likePage = 3 and isLike = '1' and delFlag = 1) 'likeNum',
+			(select count(*) from common_like_record where islike='1' and username = #{username} and pid = a.tableId and likePage = '3' and delFlag = 1) 'isLike'
+	    from common_comment_writeback a
+	    left join user_detailed_information b on a.replier = b.username
+	    left join user_detailed_information c on a.byReplier = c.username
+	    where a.delFlag = 1 and FIND_IN_SET(a.tableId,(SELECT queryChildrenAreaInfo(#{pid})))
+	    order by a.createDate DESC limit #{firstIndex},#{pageSize}
+	</select>
+
+	<!-- 删除文章 -->
+	<update id="delete" parameterType="java.lang.Integer">
+		update
+		<if test="deletePage == '1'.toString()">
+			data_article
+		</if>
+		<if test="deletePage == '2'.toString()">
+			common_comment
+		</if>
+		set
+	     	delFlag = 0
+	    where
+	    tableId = #{tableId}
+	</update>
+
+	<!-- chackLike -->
+	<select id="checkLike" parameterType="java.util.Map" resultType="java.lang.Integer">
+	    select count(*) from common_like_record where pid = #{tableId} and username=#{username}
+	    and likePage = #{likeNumPage} and isLike = 1
+	</select>
+
+	<!-- chackRecord -->
+	<select id="checkIsRecord" parameterType="java.util.Map" resultType="java.lang.Integer">
+	    select count(*) from common_like_record where pid = #{tableId} and username=#{username}
+	    and likePage = #{likeNumPage}
+	</select>
+
+	<!-- 修改点赞记录  -->
+	<update id="updateLikeRecordForUser" parameterType="com.sport.entity.UserDetailedInformation">
+		update common_like_record
+		<trim prefix="set" suffixOverrides=",">
+		    <if test="isLike!=null and isLike!=0">
+				isLike = 0
+		    </if>
+		    <if test="isLike!=null and isLike==0">
+				isLike = 1
+		    </if>
+	    </trim>
+	    where
+	    likePage = #{likeNumPage}
+	    and
+	    username=#{username}
+	    and
+	    pid = #{tableId}
+	</update>
+
+	<!-- 查询点赞数 -->
+	<select id="getLikeNum" parameterType="java.util.Map" resultType="java.lang.Integer">
+	    select count(*) from common_like_record where islike='1' and pid = #{tableId} and likePage = #{likeNumPage} and delFlag = 1
+	</select>
+
+	<!-- 新增赞数 -->
+	<insert id="addLikeRecord" parameterType="java.util.Map">
+		insert into common_like_record (pid,likePage,username,isLike,createDate,delFlag)
+		values (#{tableId},#{likeNumPage},#{username},1,#{createDate},1)
+	</insert>
+
+</mapper>

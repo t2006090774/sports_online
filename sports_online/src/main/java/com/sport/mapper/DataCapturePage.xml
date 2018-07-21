@@ -1,0 +1,83 @@
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.sport.dao.dataCapture.IDataCaptureDao">
+
+	<!-- 添加homePage信息 -->
+	<insert id="saveHomePageData" useGeneratedKeys="true" keyProperty="pid" parameterType="com.sport.entity.dataPage.DataHomePage">
+		insert into data_home_page (pictureUrl,secondUrl,title,createDate,newsTime,categoryId)
+		values (#{pictureUrl},#{secondUrl},#{title},#{createDate},#{newsTime},#{categoryId})
+	</insert>
+
+	<!-- 添加SecondPage信息 -->
+	<insert id="saveSecondPageData" useGeneratedKeys="true" keyProperty="id" parameterType="com.sport.entity.dataPage.DataSecondaryPage">
+		insert into data_secondary_page (pid,titleSecond,promulgatorSecond,createDateSecond,newsTimeSecond)
+		values (#{pid},#{titleSecond},#{promulgatorSecond},#{createDateSecond},#{newsTimeSecond})
+	</insert>
+	
+	<!-- saveContentData -->
+    <insert id="saveSecondPageContentData" parameterType="com.sport.entity.dataPage.DataSecondaryPage" >  
+    	insert into data_secondary_page_content (pid, content)  
+      		values   
+      	<foreach collection="contentSecond" item="item" index="index" separator=",">  
+	      	(#{pid}, #{item})  
+        </foreach>  
+    </insert>  
+	<!-- savePictureUrlData -->
+	<insert id="saveSecondPagePictureUrlData" parameterType="com.sport.entity.dataPage.DataSecondaryPage" >  
+    	insert into data_secondary_page_picture (pid, pictureUrl)  
+      		values
+      	<foreach collection="pictureUrlSecond" item="item" index="index" separator=",">  
+	      	(#{pid}, #{item})  
+        </foreach>  
+    </insert>
+
+	<!-- 保存赛程信息数据 -->
+	<insert id="saveScheduleData" parameterType="java.util.List" >
+		insert into data_table_a8 (categoryId,time,groupNum,score,content,teamLeftLogo,teamRightLogo,teamLeftName,teamRightName,teamLeftEnglishName,teamRightEnglishName,createDate,delFlag)
+		values
+		<foreach collection ="list" item="listNum" index= "index" separator =",">
+			(#{listNum.categoryId},#{listNum.time},#{listNum.groupNum},#{listNum.score},#{listNum.content},#{listNum.teamLeftLogo},#{listNum.teamRightLogo},#{listNum.teamLeftName},#{listNum.teamRightName},#{listNum.teamLeftEnglishName},#{listNum.teamRightEnglishName},#{listNum.createDate},1)
+		</foreach>
+	</insert>
+
+	<!-- 调用存储过程删除重复 -->
+    <select id="proRemove" statementType="CALLABLE">    
+		<![CDATA[    
+		    {call pro_remove()}
+		]]>    
+	</select> 
+		
+	<!--查询需要扫描的url 以及 规则  a left join parser_rule b on a.categoryId = b.categoryId-->
+	<select id="getUrlData" parameterType="java.util.Map" resultMap="categoryMap">
+	    select * from data_category where delFlag = 1 and categoryType = #{categoryType} and fromPage like "%"#{fromPage}"%"
+	</select>
+	
+	<!-- 查询ParserRule  -->
+	<select id="getParserRuleById" parameterType="java.lang.Integer" resultType="com.sport.entity.ParserRule">
+	    select * from parser_rule where categoryId = #{categoryId}
+	</select>
+	
+	<resultMap type="com.sport.entity.Category" id="categoryMap">
+		<id column="categoryId" property="categoryId"/>
+		<result column="categoryName" property="categoryName"/>
+		<result column="categoryDataUrl" property="categoryDataUrl"/>
+		<result column="elementsSelectorNum" property="elementsSelectorNum"/>
+		<result column="categoryName" property="categoryName"/>
+		<result column="categoryType" property="categoryType"/>
+		<result column="description" property="description"/>
+		<result column="isAsynchronous" property="isAsynchronous"/>
+		<collection property="parserRuleList" ofType="com.sport.entity.ParserRule" column="categoryId" select="getParserRuleById">
+        	<id property="parserRuleId" column="parserRuleId" javaType="java.lang.Integer" />
+            <result property="categoryId" column="categoryId" javaType="java.lang.Integer" />
+            <result property="columnName" column="columnName" javaType="java.lang.String" />
+            <result property="selector" column="selector" javaType="java.lang.String" />
+            <result property="categoryId" column="categoryId" javaType="java.lang.String" />
+            <result property="description" column="description" javaType="java.lang.String" />
+            <result property="requestHeader" column="requestHeader" javaType="java.lang.String" />
+            <result property="belong" column="belong" javaType="java.lang.Integer" />
+        </collection>
+	</resultMap>
+	
+</mapper>

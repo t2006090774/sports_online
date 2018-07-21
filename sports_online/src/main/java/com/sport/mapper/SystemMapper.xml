@@ -1,0 +1,14 @@
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.sport.dao.systemDao.ISystemDao">
+
+	<!-- 保存用户反馈  -->
+	<insert id="saveFeedBack" parameterType="com.sport.entity.base.FeedBack">
+	    insert into sys_feedback (feedBackContent, username,contactWay,delFlag) values (
+	    	#{feedBackContent}, #{username}, #{contactWay}, 1
+	    )
+	</insert>
+
+</mapper>

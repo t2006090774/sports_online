@@ -1,0 +1,60 @@
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.sport.dao.dataPage.IDataStatisticsDao">
+
+	<resultMap type="com.sport.entity.dataPage.DogDataHomePage" id="dataPageMap">
+		<id column="tableId" property="tableId"/>
+		<result column="pictureUrl" property="pictureUrl"/>
+		<result column="dogName" property="dogName"/>
+		<association property="dogDataSecondPage" column="pid" javaType="com.sport.entity.dataPage.DogDataSecondPage">
+            <result property="intro" column="intro" />
+            <result property="title" column="title" />
+            <result property="picture" column="picture" />
+            <result property="particulars" column="particulars" />
+       </association>
+	</resultMap>
+
+    <!-- 查询宠物狗数据 -->
+    <select id="getDogData" parameterType="com.sport.entity.base.Paging" resultMap="dataPageMap">
+      select a.tableId,a.pictureUrl,a.dogName,b.title,b.intro,b.picture,b.particulars
+      from data_table_a6 a left join data_table_a7 b on a.tableId = b.pid
+      limit #{firstIndex},#{pageSize}
+
+    </select>
+
+    <!-- 查询宠物狗数据 -->
+    <select id="getScheduleData" parameterType="com.sport.entity.base.Paging" resultType="com.sport.entity.dataPage.DataSchedule">
+        SELECT
+            categoryId,
+            time,
+            groupNum,
+            score,
+            content,
+            teamLeftLogo,
+            teamRightLogo,
+            teamLeftName,
+            teamRightName,
+            teamLeftEnglishName,
+            teamRightEnglishName,
+            createDate
+        FROM
+            data_table_a8
+        WHERE categoryId = #{categoryId}
+        ORDER BY time DESC
+        LIMIT #{firstIndex},#{pageSize}
+
+    </select>
+
+    <!-- 查询视频数据 -->
+    <select id="getVideoData" parameterType="com.sport.entity.base.Paging" resultType="com.sport.entity.VideoUrl">
+        SELECT
+            pid,title,url,cover
+        FROM
+            data_table_a9
+        WHERE pid = #{pid}
+        LIMIT #{firstIndex},#{pageSize}
+    </select>
+	
+</mapper>

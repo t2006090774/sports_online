@@ -1,0 +1,79 @@
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.sport.dao.login.IUserDao">
+	<resultMap type="com.sport.entity.User" id="usermap">
+		<id column="id" property="id"/>
+		<result column="username" property="user_name"/>
+		<result column="password" property="password"/>
+	</resultMap>
+
+	<!-- 添加用户名密码  -->
+	<insert id="addUser" parameterType="com.sport.entity.User">
+	    insert into user (user_name, password,createDate,updateDate,systemFlag,delFlag) values (
+	    	#{username}, #{password}, #{createDate}, #{updateDate}, #{systemFlag},1
+	    )
+	</insert>
+
+	<!-- check用户名密码  -->
+	<select id="checkUser" resultType="java.lang.Integer" parameterType="com.sport.entity.User">
+		select count(*) from user where user_name = #{username}
+		and password = #{password}
+	</select>
+	
+	<!-- check用户名  -->
+	<select id="checkName" resultType="java.lang.Integer" parameterType="java.lang.String">
+		select count(*) from user where user_name = #{username}
+	</select>
+	
+	<!-- 查询副表  -->
+	<select id="getDetailedInformation"  resultType="com.sport.entity.UserDetailedInformation" parameterType="java.lang.String">
+		select * from user_detailed_information 
+		where username = #{username}
+	</select>
+	
+	<!-- 添加副表昵称  -->
+	<insert id="addNickname" parameterType="com.sport.entity.UserDetailedInformation">
+		insert into user_detailed_information (username,nickname) 
+		values (#{username},#{nickname})
+	</insert>
+	
+	<!-- 修改副表信息  -->
+	<update id="updateDetailedInformation" parameterType="com.sport.entity.UserDetailedInformation">
+		update user_detailed_information 
+		
+			<trim prefix="set" suffixOverrides=",">    
+			    <if test="nickname!=null and nickname!=''">  
+			     	nickname= #{nickname},  
+			    </if>  
+			    <if test="sex!=null and sex!=''">  
+			    	sex = #{sex},  
+			    </if> 
+			    <if test="birthday!=null and birthday!=''">  
+			    	birthday = #{birthday},  
+			    </if> 
+			    <if test="eMail!=null and eMail!=''">  
+			    	eMail = #{eMail},  
+			    </if> 
+			    <if test="telephone!=null and telephone!=''">  
+			    	telephone = #{telephone},  
+			    </if> 
+			    <if test="age!=null and age!=''">  
+			    	age = #{age},  
+			    </if>  
+			    <if test="userImageUrl!=null and userImageUrl!=''">  
+			    	userImageUrl = #{userImageUrl},  
+			    </if> 
+		    </trim> 
+	    where username = #{username}  
+	</update>
+	
+	<!-- 修改密码  -->
+	<update id="updatePassword" parameterType="com.sport.entity.ChangePassword">
+		update user set password = #{newPassword},updateDate = #{updateDate}
+		where user_name = #{username}
+	</update>
+	
+
+</mapper>
